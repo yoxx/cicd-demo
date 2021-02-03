@@ -1,4 +1,9 @@
-<?php
+<?php declare(strict_types=1);
+
+namespace App;
+
+use PDO;
+use PDOStatement;
 
 final class Database
 {
@@ -11,7 +16,7 @@ final class Database
         PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
     ];
 
-    private function __construct(string $user, string $password, string $database, string $host = '127.0.0.1')
+    private function __construct(string $user, string $password, string $database, string $host)
     {
         $this->dbh = new PDO(
             sprintf(Database::MYSQL_DSN, $host, $database),
@@ -24,10 +29,10 @@ final class Database
     private static function initialise(): void
     {
         Database::$instance = new Database(
-            getenv("MYSQL_USER"),
-            getenv("MYSQL_PASSWORD"),
-            getenv("MYSQL_DATABASE"),
-            getenv("MYSQL_HOST"),
+            getenv("MYSQL_USER") ?: 'root',
+            getenv("MYSQL_PASSWORD") ?: '',
+            getenv("MYSQL_DATABASE") ?: 'cicd',
+            getenv("MYSQL_HOST") ?: '127.0.0.1',
         );
     }
 
