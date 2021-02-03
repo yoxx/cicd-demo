@@ -1,4 +1,6 @@
-<?php declare(strict_types=1);
+<?php
+
+declare(strict_types=1);
 
 namespace App;
 
@@ -32,7 +34,7 @@ final class Database
             getenv("MYSQL_USER") ?: 'root',
             getenv("MYSQL_PASSWORD") ?: '',
             getenv("MYSQL_DATABASE") ?: 'cicd',
-            getenv("MYSQL_HOST") ?: '127.0.0.1',
+            getenv("MYSQL_HOST") ?: '127.0.0.1:3306',
         );
     }
 
@@ -43,7 +45,7 @@ final class Database
 
     /**
      * Returns the Database handle which first gets created if needed
-     * @return PDO $dbh database handle
+     * @return PDO database handle
      */
     public static function getInstance(): PDO
     {

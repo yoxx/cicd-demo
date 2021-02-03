@@ -1,0 +1,46 @@
+name: Continuous Integration & Deployment
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  analyse:
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@v2
+      - name: Validate json/yml code style using prettier
+        run: npx prettier --check "./**/*.{json,yml,md}"
+      # Hier doe ik nog iets met caching...
+      - name: Install composer dependencies
+        run: composer install
+      - name: Validate php code style
+        run: composer lint:check
+
+  build:
+    needs: [analyse]
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v1
+      # Nog veeeeeeel meer, maar uiteindelijk wordt er een image gepushed
+
+  test:
+    needs: [analyse]
+    runs-on: ubuntu-20.04
+    env:
+      MYSQL_USER: user
+      MYSQL_PASSWORD: password
+      MYSQL_DATABASE: test
+    services:
+      mariadb:
+      # Ik ga niet alles gratis weggeven
+    steps:
+      - uses: actions/checkout@v2
+      # Hier zit ook nog een hoop tussen
+      - run: vendor/bin/phpunit --teamcity
+        env:
+          MYSQL_HOST: 127.0.0.1:${{ job.services.mariadb.ports[3306] }}

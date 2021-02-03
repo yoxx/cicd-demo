@@ -1,0 +1,33 @@
+version: "3.3"
+services:
+  entrypoint:
+    image: nginx:latest
+    depends_on:
+      - application
+    ports:
+      - 8080:80
+    volumes:
+      # By doing this we have the same data as our application.
+      - public-data:/srv/public:ro
+      - nginx-data:/etc/nginx/conf.d:ro
+  application:
+    image: ghcr.io/wesleyklop/cicd-demo:latest
+    env_file: .env.production
+    expose:
+      - 9000
+    volumes:
+      - public-data:/srv/public
+      - nginx-data:/srv/.docker
+  database:
+    image: mysql:latest
+    env_file: .env.production
+    expose:
+      - 3306
+    volumes:
+      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - db-data:/var/lib/mysql
+
+volumes:
+  db-data:
+  public-data:
+  nginx-data:
