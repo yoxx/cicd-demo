@@ -1,0 +1,30 @@
+version: "3.3"
+services:
+  webserver:
+    image: nginx:latest
+    ports:
+      - 8080:80
+    volumes:
+      - ./public:/srv/public
+      - ./.docker/site.conf:/etc/nginx/conf.d/site.conf
+  php-fpm:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - .:/srv
+    env_file: .env
+    expose:
+      - 9000
+  datebase_karel:
+    image: mysql:latest
+    env_file: .env
+    expose:
+      - 3306
+    volumes:
+      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - db-data:/var/lib/mysql
+
+volumes:
+  db-data:
+
