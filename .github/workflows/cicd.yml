@@ -36,7 +36,6 @@ jobs:
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v1
       # Nog veeeeeeel meer, maar uiteindelijk wordt er een image gepushed
-
 #  test:
 #    needs: [analyse]
 #    runs-on: ubuntu-20.04
