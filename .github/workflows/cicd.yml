@@ -13,9 +13,17 @@ jobs:
       - uses: actions/checkout@v2
       - name: Validate json/yml code style using prettier
         run: npx prettier --check "./**/*.{json,yml,md}"
-      # Hier doe ik nog iets met caching...
+      - name: Get Composer Cache Directory
+        id: composer-cache
+        run: echo "::set-output name=dir::$(composer config cache-files-dir)"
+      - uses: actions/cache@v2
+        with:
+          path: ${{ steps.composer-cache.outputs.dir }}
+          key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-composer-
       - name: Install composer dependencies
-        run: composer install
+        run: composer install -q --no-ansi --no-interaction --no-suggest --no-progress --prefer-dist --no-scripts
       - name: Validate php code style
         run: composer lint:check
 
@@ -26,7 +34,31 @@ jobs:
       - uses: actions/checkout@v2
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v1
-      # Nog veeeeeeel meer, maar uiteindelijk wordt er een image gepushed
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v1
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v1
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.CR_PAT }}
+      - name: Docker meta. Used for getting correct tag/image names
+        id: meta
+        uses: crazy-max/ghaction-docker-meta@v1
+        with:
+          images: ghcr.io/${{ github.repository }}
+          tag-sha: true
+          tag-custom: latest
+      - name: Build and push docker image
+        id: build
+        uses: docker/build-push-action@v2
+        with:
+          context: .
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+      - name: Image digest
+        run: echo ${{ steps.build.outputs.digest }}
 
   test:
     needs: [analyse]
@@ -37,10 +69,41 @@ jobs:
       MYSQL_DATABASE: test
     services:
       mariadb:
-      # Ik ga niet alles gratis weggeven
+        image: mariadb:latest
+        ports:
+          - 3306
+        env:
+          MYSQL_USER: ${{ env.MYSQL_USER }}
+          MYSQL_PASSWORD: ${{ env.MYSQL_PASSWORD }}
+          MYSQL_DATABASE: ${{ env.MYSQL_DATABASE }}
+          MYSQL_ROOT_PASSWORD: password
+        options: --health-cmd="mysqladmin ping" --health-interval=5s --health-timeout=2s --health-retries=3
     steps:
       - uses: actions/checkout@v2
-      # Hier zit ook nog een hoop tussen
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: 8
+          coverage: xdebug
+          extensions: pdo-mysql
+      - name: Get Composer Cache Directory
+        id: composer-cache
+        run: echo "::set-output name=dir::$(composer config cache-files-dir)"
+      - uses: actions/cache@v2
+        with:
+          path: ${{ steps.composer-cache.outputs.dir }}
+          key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-composer-
+      - run: composer install -q --no-ansi --no-interaction --no-suggest --no-progress --prefer-dist --no-scripts
+      - name: Import database structure
+        run: |
+          mysql -u ${{ env.MYSQL_USER }} \
+          -p${{ env.MYSQL_PASSWORD }} \
+          --host 127.0.0.1 \
+          --port ${{ job.services.mariadb.ports[3306] }} \
+          ${{ env.MYSQL_DATABASE }} < database/init.sql
+      - name: Configure matchers for fancy reporting
+        uses: mheap/phpunit-matcher-action@v1
       - run: vendor/bin/phpunit --teamcity
         env:
           MYSQL_HOST: 127.0.0.1:${{ job.services.mariadb.ports[3306] }}
