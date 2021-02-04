@@ -37,19 +37,19 @@ jobs:
         uses: docker/setup-qemu-action@v1
       # Nog veeeeeeel meer, maar uiteindelijk wordt er een image gepushed
 
-  test:
-    needs: [analyse]
-    runs-on: ubuntu-20.04
-    env:
-      MYSQL_USER: user
-      MYSQL_PASSWORD: password
-      MYSQL_DATABASE: test
-    services:
-      mariadb:
-      # Ik ga niet alles gratis weggeven
-    steps:
-      - uses: actions/checkout@v2
-      # Hier zit ook nog een hoop tussen
-      - run: vendor/bin/phpunit --teamcity
-        env:
-          MYSQL_HOST: 127.0.0.1:${{ job.services.mariadb.ports[3306] }}
+#  test:
+#    needs: [analyse]
+#    runs-on: ubuntu-20.04
+#    env:
+#      MYSQL_USER: user
+#      MYSQL_PASSWORD: password
+#      MYSQL_DATABASE: test
+#    services:
+#      mariadb:
+#      # Ik ga niet alles gratis weggeven
+#    steps:
+#      - uses: actions/checkout@v2
+#      # Hier zit ook nog een hoop tussen
+#      - run: vendor/bin/phpunit --teamcity
+#        env:
+#          MYSQL_HOST: 127.0.0.1:${{ job.services.mariadb.ports[3306] }}
